@@ -9,7 +9,7 @@
 
 export function initResponsive() {
   // ── Vins section — 2-col grid ────────────────────────────
-  const vinsGrid = document.querySelector('#vins .max-w-content > div:last-child');
+  const vinsGrid = document.getElementById('vinsGrid');
   function checkVins() {
     if (!vinsGrid) return;
     vinsGrid.style.gridTemplateColumns = window.innerWidth < 640 ? '1fr' : '1fr 1fr';
