@@ -39,10 +39,31 @@
     /* Toast slide-in */
     @keyframes slideIn { from { transform:translateX(110%) } to { transform:translateX(0) } }
     .toast { animation: slideIn 0.3s ease; }
+
+    /* Mobile sidebar */
+    @media (max-width: 1023px) {
+      #sidebar {
+        position: fixed;
+        top: 0; bottom: 0; left: 0;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+        z-index: 50;
+      }
+      #sidebar.sidebar-open { transform: translateX(0); }
+      #sidebarOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 49; backdrop-filter: blur(2px); }
+      #sidebarOverlay.sidebar-open { display: block; }
+      #sidebarToggle { display: flex; }
+    }
+    @media (min-width: 1024px) {
+      #sidebarToggle { display: none; }
+    }
   </style>
 </head>
 
 <body class="bg-gray-100 min-h-screen flex">
+
+<!-- Mobile sidebar overlay (tap to close) -->
+<div id="sidebarOverlay"></div>
 
 <!-- ══════════════════════════════════════════
   TOAST NOTIFICATIONS (fixed top-right)
@@ -55,7 +76,7 @@
 ══════════════════════════════════════════ -->
 
 <!-- ── SIDEBAR ───────────────────────────── -->
-<aside class="w-64 min-h-screen bg-deep text-white flex flex-col shrink-0">
+<aside id="sidebar" class="w-64 min-h-screen bg-deep text-white flex flex-col shrink-0">
 
   <!-- Brand header -->
   <div class="px-6 py-6 border-b border-white/10">
@@ -86,11 +107,16 @@
       <span id="resBadge" class="ml-auto hidden text-[10px] bg-yellow-400 text-yellow-900 font-bold px-1.5 py-0.5 rounded-full"></span>
     </button>
 
-    <button disabled
-      class="nav-item w-full text-left px-3 py-2.5 rounded-r text-sm flex items-center gap-3 text-white/25 cursor-not-allowed"
-      style="font-family:Montserrat,sans-serif">
+    <button id="nav-actualites"
+      class="nav-item w-full text-left px-3 py-2.5 rounded-r text-sm font-medium flex items-center gap-3 transition-colors"
+      style="font-family:Montserrat,sans-serif;color:rgba(255,255,255,0.6)">
       <span>📢</span> Actualités
-      <span class="ml-auto text-[10px] bg-white/10 px-1.5 py-0.5 rounded">soon</span>
+    </button>
+
+    <button id="nav-newsletter"
+      class="nav-item w-full text-left px-3 py-2.5 rounded-r text-sm font-medium flex items-center gap-3 transition-colors"
+      style="font-family:Montserrat,sans-serif;color:rgba(255,255,255,0.6)">
+      <span>✉️</span> Newsletter
     </button>
 
     <button disabled
@@ -126,12 +152,24 @@
 <main class="flex-1 flex flex-col min-h-screen overflow-auto">
 
   <!-- Top bar -->
-  <header class="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
-    <div>
-      <h1 class="text-xl font-bold text-gray-800" style="font-family:Montserrat,sans-serif" id="pageTitle">
-        Menu Items
-      </h1>
-      <p class="text-xs text-gray-400 mt-0.5" id="pageSubtitle">Gérez les plats et vins affichés sur le site</p>
+  <header class="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+    <div class="flex items-center gap-3">
+      <!-- Mobile hamburger -->
+      <button id="sidebarToggle"
+        class="items-center justify-center w-9 h-9 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+        aria-label="Ouvrir le menu">
+        <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="18" height="1.5" rx="0.75" fill="currentColor"/>
+          <rect y="6.25" width="18" height="1.5" rx="0.75" fill="currentColor"/>
+          <rect y="12.5" width="18" height="1.5" rx="0.75" fill="currentColor"/>
+        </svg>
+      </button>
+      <div>
+        <h1 class="text-lg md:text-xl font-bold text-gray-800" style="font-family:Montserrat,sans-serif" id="pageTitle">
+          Menu Items
+        </h1>
+        <p class="text-xs text-gray-400 mt-0.5" id="pageSubtitle">Gérez les plats et vins affichés sur le site</p>
+      </div>
     </div>
     <button id="addBtn"
       class="bg-gold hover:bg-yellow-500 text-deep font-bold text-xs tracking-widest uppercase px-5 py-2.5 transition-colors flex items-center gap-2"
@@ -165,6 +203,154 @@
       <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div id="resTableContainer"></div>
       </div>
+    </div>
+
+    <!-- ═══════ SECTION: NEWSLETTER ═══════ -->
+    <div id="page-newsletter" class="dashboard-page hidden">
+
+      <!-- Stats strip -->
+      <div id="nlStats" class="grid grid-cols-2 gap-3 mb-6 max-w-sm"></div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- ── Compose card ────────────────────────────── -->
+        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <h3 class="font-bold text-gray-700 text-xs uppercase tracking-widest" style="font-family:Montserrat,sans-serif">
+              Rédiger un email
+            </h3>
+          </div>
+          <div class="p-6 flex flex-col gap-4">
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5"
+                style="font-family:Montserrat,sans-serif">Objet</label>
+              <input type="text" id="nlSubject" placeholder="Nouveautés de mai — L'Au Dedans"
+                class="w-full border border-gray-200 rounded px-3 py-2.5 text-sm text-gray-800
+                       focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5"
+                style="font-family:Montserrat,sans-serif">Corps du message</label>
+              <textarea id="nlBody" rows="8" placeholder="Bonjour,&#10;&#10;Nous avons le plaisir de vous annoncer…"
+                class="w-full border border-gray-200 rounded px-3 py-2.5 text-sm text-gray-800
+                       focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition resize-y"></textarea>
+            </div>
+
+            <!-- Info notice about email service -->
+            <div class="text-xs bg-amber-50 border border-amber-200 rounded px-3 py-2.5 text-amber-700 flex gap-2"
+              style="font-family:Montserrat,sans-serif">
+              <span class="flex-shrink-0">⚙</span>
+              <span>L'envoi nécessite un service e-mail (Resend / Brevo) + une Supabase Edge Function. Configurez cela avec votre développeur pour activer le bouton.</span>
+            </div>
+
+            <button id="nlSendBtn" disabled
+              class="w-full bg-gold text-deep font-bold text-xs tracking-widest uppercase px-5 py-3
+                     opacity-40 cursor-not-allowed"
+              style="font-family:Montserrat,sans-serif">
+              Envoyer à tous les abonnés actifs
+            </button>
+
+          </div>
+        </div>
+
+        <!-- ── Subscriber list ─────────────────────────── -->
+        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+            <h3 class="font-bold text-gray-700 text-xs uppercase tracking-widest" style="font-family:Montserrat,sans-serif">
+              Abonnés
+            </h3>
+            <button id="nlRefreshBtn"
+              class="text-xs text-gray-400 hover:text-gold transition-colors"
+              style="font-family:Montserrat,sans-serif">↺ Actualiser</button>
+          </div>
+          <div id="nlSubscriberList" class="overflow-y-auto" style="max-height:420px"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════ SECTION: ACTUALITÉS ═══════ -->
+    <div id="page-actualites" class="dashboard-page hidden">
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- ── Upload card ─────────────────────────────── -->
+        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <h3 class="font-bold text-gray-700 text-xs uppercase tracking-widest" style="font-family:Montserrat,sans-serif">
+              Publier une nouvelle affiche
+            </h3>
+          </div>
+          <div class="p-6 flex flex-col gap-4">
+
+            <!-- Drop zone -->
+            <label id="dropZone"
+              class="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-gray-200 rounded-lg p-10 cursor-pointer
+                     hover:border-gold hover:bg-yellow-50/30 transition-colors group">
+              <span class="text-4xl group-hover:scale-110 transition-transform">🖼️</span>
+              <div class="text-center">
+                <p class="text-sm font-semibold text-gray-600" style="font-family:Montserrat,sans-serif">
+                  Glisser-déposer ou cliquer pour choisir
+                </p>
+                <p class="text-xs text-gray-400 mt-1">JPG, PNG, WEBP, GIF — max 8 Mo</p>
+              </div>
+              <input type="file" id="posterFileInput" accept="image/jpeg,image/png,image/webp,image/gif"
+                class="sr-only">
+            </label>
+
+            <!-- Preview (hidden until file selected) -->
+            <div id="uploadPreviewWrap" class="hidden">
+              <p class="text-xs text-gray-400 uppercase tracking-wider mb-2" style="font-family:Montserrat,sans-serif">Aperçu</p>
+              <div class="relative rounded overflow-hidden border border-gray-100 shadow-sm">
+                <img id="uploadPreviewImg" src="" alt="Aperçu de l'affiche"
+                  class="w-full object-contain max-h-64 bg-gray-50">
+              </div>
+              <p id="uploadFileName" class="text-xs text-gray-400 mt-1.5 truncate"></p>
+            </div>
+
+            <!-- Upload error -->
+            <div id="uploadError" class="hidden text-xs text-red-500 bg-red-50 border border-red-200 rounded px-3 py-2"></div>
+
+            <!-- Upload button -->
+            <button id="uploadBtn" disabled
+              class="w-full bg-gold text-deep font-bold text-xs tracking-widest uppercase px-5 py-3
+                     opacity-40 cursor-not-allowed transition-all"
+              style="font-family:Montserrat,sans-serif">
+              Publier l'affiche
+            </button>
+
+          </div>
+        </div>
+
+        <!-- ── Current poster card ─────────────────────── -->
+        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+            <h3 class="font-bold text-gray-700 text-xs uppercase tracking-widest" style="font-family:Montserrat,sans-serif">
+              Affiche actuellement publiée
+            </h3>
+            <span id="currentPosterBadge"
+              class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700"
+              style="font-family:Montserrat,sans-serif">En ligne</span>
+          </div>
+          <div id="currentPosterArea" class="p-6 flex items-center justify-center min-h-48">
+            <div class="skeleton h-48 w-full rounded"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── History table ───────────────────────────────── -->
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden mt-6">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <h3 class="font-bold text-gray-700 text-xs uppercase tracking-widest" style="font-family:Montserrat,sans-serif">
+            Historique des affiches
+          </h3>
+        </div>
+        <div id="posterHistoryContainer"></div>
+      </div>
+
     </div>
 
   </div>
@@ -328,11 +514,12 @@ const TABLE = 'Menu_items';  // must match the exact Supabase table name
 // ─────────────────────────────────────────────────────────────
 
 const state = {
-  items:            [],       // menu items from DB
-  activeCategory:   'ALL',   // current menu filter
-  editingId:        null,     // id_item being edited (null = add mode)
-  pendingDeleteId:  null,     // id waiting for delete confirm
-  pendingDeleteType: 'menu',  // 'menu' | 'reservation'
+  items:                 [],       // menu items from DB
+  activeCategory:        'ALL',    // current menu filter
+  editingId:             null,     // id_item being edited (null = add mode)
+  pendingDeleteId:       null,     // id waiting for delete confirm
+  pendingDeleteType:     'menu',   // 'menu' | 'reservation' | 'poster'
+  pendingDeleteFilename: null,     // storage filename for poster deletes
 };
 
 // Category metadata: display label + Tailwind badge colors
@@ -666,7 +853,8 @@ function openDeleteModal(id, name) {
 }
 
 function closeDeleteModal() {
-  state.pendingDeleteId = null;
+  state.pendingDeleteId       = null;
+  state.pendingDeleteFilename = null;
   document.getElementById('deleteModal').classList.add('hidden');
 }
 
@@ -762,27 +950,69 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', async () =
   const type = state.pendingDeleteType;
   if (!id) return;
 
-  document.getElementById('confirmDeleteBtn').textContent = 'Suppression…';
+  const delBtn = document.getElementById('confirmDeleteBtn');
+  delBtn.textContent = 'Suppression…';
+  delBtn.disabled = true;
 
   let error;
   if (type === 'reservation') {
     ({ error } = await dbDeleteReservation(id));
+  } else if (type === 'poster') {
+    const filename = state.pendingDeleteFilename ?? '';
+    ({ error } = await dbDeletePoster(id, filename));
+  } else if (type === 'subscriber') {
+    ({ error } = await dbDeleteSubscriber(id));
   } else {
     ({ error } = await dbDelete(id));
   }
+
+  delBtn.textContent = 'Supprimer';
+  delBtn.disabled = false;
 
   if (error) showToast(`Erreur: ${error.message}`, 'error');
   else       showToast('Supprimé.', 'info');
 
   closeDeleteModal();
   if (type === 'reservation') await loadAndRenderReservations();
-  else                        await loadAndRender();
+  else if (type === 'poster')     await loadAndRenderActualites();
+  else if (type === 'subscriber') await loadAndRenderNewsletter();
+  else                            await loadAndRender();
 });
 
 // ── Nav section buttons (onclick not usable in module scope) ─
 // Wired here with addEventListener so setSection is accessible.
 document.getElementById('nav-menu')?.addEventListener('click', () => setSection('menu'));
 document.getElementById('nav-reservations')?.addEventListener('click', () => setSection('reservations'));
+document.getElementById('nav-actualites')?.addEventListener('click', () => setSection('actualites'));
+document.getElementById('nav-newsletter')?.addEventListener('click', () => setSection('newsletter'));
+
+// ── Mobile sidebar toggle ────────────────────────────────────
+(function() {
+  const toggle  = document.getElementById('sidebarToggle');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+
+  function openSidebar() {
+    sidebar.classList.add('sidebar-open');
+    overlay.classList.add('sidebar-open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('sidebar-open');
+    overlay.classList.remove('sidebar-open');
+    document.body.style.overflow = '';
+  }
+
+  toggle?.addEventListener('click', openSidebar);
+  overlay?.addEventListener('click', closeSidebar);
+
+  // Auto-close sidebar on nav click (mobile)
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (window.innerWidth < 1024) closeSidebar();
+    });
+  });
+})();
 
 // ── Auth logout placeholder ──────────────────────────────────
 // TODO: replace with supabase.auth.signOut() → redirect to /admin/login.html
@@ -809,6 +1039,8 @@ function setSection(name) {
   const headers = {
     menu:         { title: 'Menu Items',   sub: 'Gérez les plats et vins affichés sur le site', showAdd: true  },
     reservations: { title: 'Réservations', sub: 'Gérez les demandes de réservation',            showAdd: false },
+    actualites:   { title: 'Actualités',   sub: 'Publiez l\'affiche événement visible sur le site', showAdd: false },
+    newsletter:   { title: 'Newsletter',   sub: 'Gérez les abonnés et rédigez vos emails',         showAdd: false },
   };
   const h = headers[name] ?? { title: name, sub: '', showAdd: false };
   document.getElementById('pageTitle').textContent    = h.title;
@@ -817,6 +1049,8 @@ function setSection(name) {
 
   if (name === 'menu')         loadAndRender();
   if (name === 'reservations') loadAndRenderReservations();
+  if (name === 'actualites')   loadAndRenderActualites();
+  if (name === 'newsletter')   loadAndRenderNewsletter();
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1096,6 +1330,404 @@ async function loadAndRender() {
   renderFilters();
   renderTable();
 }
+
+// ─────────────────────────────────────────────────────────────
+// SECTION 10 — ACTUALITÉS
+// Table : actualities  (id int8, image_url text, created_at timestamptz)
+// Storage bucket : actualities (public)
+// ─────────────────────────────────────────────────────────────
+
+const ACT_TABLE  = 'actualities';
+const ACT_BUCKET = 'actualities';
+
+// ── DB helpers ───────────────────────────────────────────────
+
+async function dbFetchPosters() {
+  const { data, error } = await supabase
+    .from(ACT_TABLE)
+    .select('*')
+    .order('created_at', { ascending: false });
+  return { data: data ?? [], error };
+}
+
+async function dbInsertPoster(imageUrl) {
+  const { error } = await supabase
+    .from(ACT_TABLE)
+    .insert([{ image_url: imageUrl }]);
+  return { error };
+}
+
+async function dbDeletePoster(id, filename) {
+  if (filename) await supabase.storage.from(ACT_BUCKET).remove([filename]);
+  const { error } = await supabase.from(ACT_TABLE).delete().eq('id', Number(id));
+  return { error };
+}
+
+// ── Storage upload helper ────────────────────────────────────
+
+async function uploadPosterFile(file) {
+  const ext     = file.name.split('.').pop().toLowerCase();
+  const allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+  if (!allowed.includes(ext))    return { url: null, filename: null, error: 'Format non supporté. Utilisez JPG, PNG, WEBP ou GIF.' };
+  if (file.size > 8 * 1024 * 1024) return { url: null, filename: null, error: 'Fichier trop lourd. Maximum 8 Mo.' };
+
+  const filename = `poster-${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(ACT_BUCKET)
+    .upload(filename, file, { cacheControl: '3600', upsert: false });
+
+  if (uploadError) return { url: null, filename: null, error: uploadError.message };
+
+  const { data } = supabase.storage.from(ACT_BUCKET).getPublicUrl(filename);
+  return { url: data.publicUrl, filename, error: null };
+}
+
+// ── Renderers ────────────────────────────────────────────────
+
+function renderCurrentPoster(posters) {
+  const area   = document.getElementById('currentPosterArea');
+  const badge  = document.getElementById('currentPosterBadge');
+  const latest = posters[0] ?? null;
+
+  if (!latest) {
+    badge.classList.add('hidden');
+    area.innerHTML = `
+      <div class="text-center text-gray-300 py-8">
+        <p class="text-5xl mb-3">📭</p>
+        <p class="text-sm" style="font-family:Montserrat,sans-serif">Aucune affiche publiée.</p>
+      </div>`;
+    return;
+  }
+
+  badge.classList.remove('hidden');
+  const date = new Date(latest.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
+
+  area.innerHTML = `
+    <div class="w-full">
+      <div class="relative rounded overflow-hidden border border-gray-100 shadow-sm mb-3">
+        <img src="${latest.image_url}" alt="Affiche actuelle"
+          class="w-full object-contain max-h-72 bg-gray-50"
+          onerror="this.src='https://placehold.co/340x480?text=Image+non+disponible'">
+      </div>
+      <p class="text-xs text-gray-400 text-center" style="font-family:Montserrat,sans-serif">Publiée le ${date}</p>
+    </div>`;
+}
+
+function renderPosterHistory(posters) {
+  const container = document.getElementById('posterHistoryContainer');
+
+  if (!posters.length) {
+    container.innerHTML = `
+      <div class="py-12 text-center text-gray-300">
+        <p class="text-sm" style="font-family:Montserrat,sans-serif">Aucun historique disponible.</p>
+      </div>`;
+    return;
+  }
+
+  const rows = posters.map((p, idx) => {
+    const date     = new Date(p.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const filename = p.image_url.split('/').pop();
+    const isActive = idx === 0;
+
+    return `
+      <tr class="item-row border-t border-gray-100">
+        <td class="px-4 py-3 w-16">
+          <img src="${p.image_url}" alt="Affiche"
+            class="w-12 h-16 object-cover rounded border border-gray-100 shadow-sm"
+            onerror="this.src='https://placehold.co/48x64?text=?'">
+        </td>
+        <td class="px-4 py-3 text-xs text-gray-500 font-mono truncate max-w-xs">${filename}</td>
+        <td class="px-4 py-3 text-xs text-gray-400" style="font-family:Montserrat,sans-serif">${date}</td>
+        <td class="px-4 py-3">
+          ${isActive
+            ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700"
+                style="font-family:Montserrat,sans-serif">Active</span>`
+            : ''}
+        </td>
+        <td class="px-4 py-3 text-right">
+          <button class="btn-poster-delete text-gray-300 hover:text-red-400 px-2 py-1 rounded transition"
+            data-id="${p.id}" data-filename="${filename}" data-name="${filename}">🗑️</button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <table class="w-full text-left">
+      <thead class="bg-gray-50 text-xs text-gray-400 uppercase tracking-wider border-b border-gray-200"
+        style="font-family:Montserrat,sans-serif">
+        <tr>
+          <th class="px-4 py-3">Aperçu</th>
+          <th class="px-4 py-3">Fichier</th>
+          <th class="px-4 py-3">Publié le</th>
+          <th class="px-4 py-3">Statut</th>
+          <th class="px-4 py-3 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="px-4 py-3 border-t border-gray-100 text-xs text-gray-400"
+      style="font-family:Montserrat,sans-serif">
+      ${posters.length} affiche${posters.length > 1 ? 's' : ''}
+    </div>`;
+
+  container.querySelectorAll('.btn-poster-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.pendingDeleteId   = btn.dataset.id;
+      state.pendingDeleteType = 'poster';
+      state.pendingDeleteFilename = btn.dataset.filename;
+      document.getElementById('deleteItemName').textContent = `"${btn.dataset.name}"`;
+      document.getElementById('deleteModal').classList.remove('hidden');
+    });
+  });
+}
+
+// ── Load + render all ─────────────────────────────────────────
+
+async function loadAndRenderActualites() {
+  // Show skeleton in current poster area
+  document.getElementById('currentPosterArea').innerHTML = `<div class="skeleton h-48 w-full rounded"></div>`;
+  document.getElementById('currentPosterBadge').classList.add('hidden');
+  document.getElementById('posterHistoryContainer').innerHTML = `
+    <div class="py-8 text-center">
+      <div class="skeleton h-4 w-48 mx-auto mb-2 rounded"></div>
+      <div class="skeleton h-3 w-32 mx-auto rounded"></div>
+    </div>`;
+
+  const { data, error } = await dbFetchPosters();
+
+  if (error) {
+    document.getElementById('currentPosterArea').innerHTML = `
+      <p class="text-sm text-red-400">${error.message}</p>`;
+    return;
+  }
+
+  renderCurrentPoster(data);
+  renderPosterHistory(data);
+}
+
+// ── File picker + drag-and-drop wiring ───────────────────────
+
+let selectedFile = null;
+
+function handleFileSelected(file) {
+  if (!file) return;
+  selectedFile = file;
+
+  const preview = document.getElementById('uploadPreviewImg');
+  const wrap    = document.getElementById('uploadPreviewWrap');
+  const nameEl  = document.getElementById('uploadFileName');
+  const btn     = document.getElementById('uploadBtn');
+  const errEl   = document.getElementById('uploadError');
+
+  errEl.classList.add('hidden');
+  preview.src   = URL.createObjectURL(file);
+  nameEl.textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} Mo)`;
+  wrap.classList.remove('hidden');
+  btn.disabled  = false;
+  btn.classList.remove('opacity-40', 'cursor-not-allowed');
+  btn.classList.add('hover:bg-yellow-500', 'cursor-pointer');
+}
+
+document.getElementById('posterFileInput').addEventListener('change', e => {
+  handleFileSelected(e.target.files[0] ?? null);
+});
+
+// Drag-and-drop on the label
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('border-gold', 'bg-yellow-50/50');
+});
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('border-gold', 'bg-yellow-50/50');
+});
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('border-gold', 'bg-yellow-50/50');
+  const file = e.dataTransfer.files[0] ?? null;
+  if (file) {
+    document.getElementById('posterFileInput').files = e.dataTransfer.files;
+    handleFileSelected(file);
+  }
+});
+
+// ── Upload button handler ────────────────────────────────────
+
+document.getElementById('uploadBtn').addEventListener('click', async () => {
+  if (!selectedFile) return;
+
+  const btn   = document.getElementById('uploadBtn');
+  const errEl = document.getElementById('uploadError');
+  errEl.classList.add('hidden');
+
+  btn.textContent = 'Publication en cours…';
+  btn.disabled = true;
+
+  const { url, error: uploadErr } = await uploadPosterFile(selectedFile);
+
+  if (uploadErr) {
+    errEl.textContent = uploadErr;
+    errEl.classList.remove('hidden');
+    btn.textContent = 'Publier l\'affiche';
+    btn.disabled = false;
+    return;
+  }
+
+  const { error: dbErr } = await dbInsertPoster(url);
+
+  if (dbErr) {
+    errEl.textContent = `Erreur base de données : ${dbErr.message}`;
+    errEl.classList.remove('hidden');
+    btn.textContent = 'Publier l\'affiche';
+    btn.disabled = false;
+    return;
+  }
+
+  showToast('Affiche publiée ✓', 'success');
+
+  // Reset upload area
+  selectedFile = null;
+  document.getElementById('itemForm').reset();          // doesn't affect file input
+  document.getElementById('posterFileInput').value = '';
+  document.getElementById('uploadPreviewWrap').classList.add('hidden');
+  btn.textContent = 'Publier l\'affiche';
+  btn.disabled = true;
+  btn.classList.add('opacity-40', 'cursor-not-allowed');
+  btn.classList.remove('hover:bg-yellow-500', 'cursor-pointer');
+
+  await loadAndRenderActualites();
+});
+
+// ─────────────────────────────────────────────────────────────
+// SECTION 11 — NEWSLETTER
+// Table : newsletter_subscribers
+// Columns: id, email, subscribed_at, is_active
+// ─────────────────────────────────────────────────────────────
+
+const NL_TABLE = 'newsletter_subscribers';
+
+async function dbFetchSubscribers() {
+  const { data, error } = await supabase
+    .from(NL_TABLE)
+    .select('*')
+    .order('subscribed_at', { ascending: false });
+  return { data: data ?? [], error };
+}
+
+async function dbToggleSubscriber(id, isActive) {
+  const { error } = await supabase
+    .from(NL_TABLE)
+    .update({ is_active: isActive })
+    .eq('id', Number(id));
+  return { error };
+}
+
+async function dbDeleteSubscriber(id) {
+  const { error } = await supabase
+    .from(NL_TABLE)
+    .delete()
+    .eq('id', Number(id));
+  return { error };
+}
+
+function renderNlStats(subscribers) {
+  const total  = subscribers.length;
+  const active = subscribers.filter(s => s.is_active).length;
+  document.getElementById('nlStats').innerHTML = [
+    ['Abonnés actifs', active, 'bg-green-50 border-green-200 text-green-800'],
+    ['Total inscrits', total,  'bg-blue-50 border-blue-200 text-blue-800'],
+  ].map(([label, count, cls]) => `
+    <div class="border rounded-lg p-4 text-center ${cls}">
+      <p class="text-3xl font-bold">${count}</p>
+      <p class="text-xs mt-1 uppercase tracking-wider" style="font-family:Montserrat,sans-serif">${label}</p>
+    </div>`).join('');
+}
+
+function renderNlSubscribers(subscribers) {
+  const list = document.getElementById('nlSubscriberList');
+  if (!subscribers.length) {
+    list.innerHTML = `
+      <div class="py-14 text-center text-gray-300">
+        <p class="text-3xl mb-2">📭</p>
+        <p class="text-sm" style="font-family:Montserrat,sans-serif">Aucun abonné pour l'instant.</p>
+      </div>`;
+    return;
+  }
+
+  const rows = subscribers.map(s => {
+    const date = new Date(s.subscribed_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+    const isActive = s.is_active !== false;
+    return `
+      <div class="flex items-center gap-3 px-4 py-2.5 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+        <div class="flex-1 min-w-0">
+          <p class="text-sm text-gray-800 truncate">${s.email}</p>
+          <p class="text-xs text-gray-400 mt-0.5" style="font-family:Montserrat,sans-serif">${date}</p>
+        </div>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${isActive
+          ? 'bg-green-100 text-green-700'
+          : 'bg-gray-100 text-gray-400'}"
+          style="font-family:Montserrat,sans-serif">${isActive ? 'Actif' : 'Désabonné'}</span>
+        <button class="btn-nl-toggle text-xs px-2 py-1 rounded border transition shrink-0 ${isActive
+          ? 'border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200'
+          : 'border-green-200 text-green-600 hover:bg-green-50'}"
+          data-id="${s.id}" data-active="${isActive}"
+          style="font-family:Montserrat,sans-serif"
+          title="${isActive ? 'Désabonner' : 'Réabonner'}">
+          ${isActive ? '✗' : '✓'}
+        </button>
+        <button class="btn-nl-delete text-gray-300 hover:text-red-400 px-1 transition shrink-0"
+          data-id="${s.id}" data-name="${s.email}" title="Supprimer">🗑️</button>
+      </div>`;
+  }).join('');
+
+  list.innerHTML = `
+    <div class="px-4 py-2 bg-gray-50 border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wider"
+      style="font-family:Montserrat,sans-serif">
+      Email · Date · Statut
+    </div>
+    ${rows}`;
+
+  // Toggle active/inactive
+  list.querySelectorAll('.btn-nl-toggle').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const newActive = btn.dataset.active !== 'true';
+      const { error } = await dbToggleSubscriber(btn.dataset.id, newActive);
+      if (error) showToast('Erreur: ' + error.message, 'error');
+      else { showToast(newActive ? 'Abonné réactivé ✓' : 'Abonné désactivé.', 'info'); await loadAndRenderNewsletter(); }
+    });
+  });
+
+  // Delete subscriber
+  list.querySelectorAll('.btn-nl-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.pendingDeleteId   = btn.dataset.id;
+      state.pendingDeleteType = 'subscriber';
+      document.getElementById('deleteItemName').textContent = `"${btn.dataset.name}"`;
+      document.getElementById('deleteModal').classList.remove('hidden');
+    });
+  });
+}
+
+async function loadAndRenderNewsletter() {
+  document.getElementById('nlSubscriberList').innerHTML = `
+    <div class="py-8 text-center">
+      <div class="skeleton h-4 w-48 mx-auto mb-2 rounded"></div>
+      <div class="skeleton h-3 w-32 mx-auto rounded"></div>
+    </div>`;
+
+  const { data, error } = await dbFetchSubscribers();
+  if (error) {
+    document.getElementById('nlSubscriberList').innerHTML =
+      `<p class="p-4 text-sm text-red-400">${error.message}</p>`;
+    return;
+  }
+  renderNlStats(data);
+  renderNlSubscribers(data);
+}
+
+document.getElementById('nlRefreshBtn')?.addEventListener('click', loadAndRenderNewsletter);
 
 // ─────────────────────────────────────────────────────────────
 // BOOT

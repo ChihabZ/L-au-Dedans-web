@@ -144,7 +144,7 @@
     <div style="display:flex;gap:3rem;align-items:center;flex-wrap:wrap;justify-content:center">
       <!-- Event poster -->
       <div style="position:relative;max-width:340px;flex-shrink:0;">
-        <img src="building%20assets/fb-source-event.jpg" alt="Événement L'Au Dedans — Fermeture exceptionnelle"
+        <img id="eventPoster" src="building%20assets/fb-source-event.jpg" alt="Événement L'Au Dedans — Fermeture exceptionnelle"
              style="width:100%;display:block;box-shadow:0 0 0 1px rgba(212,175,55,0.12),0 24px 64px rgba(0,0,0,0.5),0 4px 16px rgba(0,0,0,0.35);">
         <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(17,24,32,0.35),transparent 50%)"></div>
       </div>
@@ -161,6 +161,24 @@
         <a href="https://facebook.com/laudedans" target="_blank" rel="noopener" class="btn-outline-dark">
           Suivre sur Facebook →
         </a>
+
+        <!-- Newsletter subscribe -->
+        <div style="margin-top:0.9rem">
+          <button id="nlToggle" class="btn-outline-dark" style="display:inline-flex;align-items:center;gap:0.5rem">
+            ✉ S'abonner à notre newsletter →
+          </button>
+          <div id="nlFormWrap" style="display:none;margin-top:1rem">
+            <form id="nlFormEl" style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:flex-start">
+              <input type="email" id="nlEmail" class="contact-form-input"
+                placeholder="votre@email.fr" required
+                style="flex:1;min-width:190px;max-width:270px">
+              <button type="submit" class="btn-reserve" style="white-space:nowrap">
+                S'inscrire →
+              </button>
+            </form>
+            <p id="nlMsg" style="display:none;margin-top:0.6rem;font-family:'Montserrat',sans-serif;font-size:0.78rem;font-weight:600"></p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -575,7 +593,7 @@
         <h3 class="f-display" style="font-size:2rem;font-weight:300;color:var(--navy);margin-bottom:2rem;line-height:1.15">Tout ce que vous<br><em>voulez savoir</em></h3>
 
         <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+          <button class="faq-question" aria-expanded="false">
             <span>Comment réserver une table ?</span>
             <span class="faq-icon">+</span>
           </button>
@@ -584,7 +602,7 @@
           </div>
         </div>
         <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+          <button class="faq-question" aria-expanded="false">
             <span>Proposez-vous un menu enfant ?</span>
             <span class="faq-icon">+</span>
           </button>
@@ -593,7 +611,7 @@
           </div>
         </div>
         <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+          <button class="faq-question" aria-expanded="false">
             <span>Proposez-vous des plateaux à emporter ?</span>
             <span class="faq-icon">+</span>
           </button>
@@ -602,7 +620,7 @@
           </div>
         </div>
         <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+          <button class="faq-question" aria-expanded="false">
             <span>Y a-t-il des options végétariennes ?</span>
             <span class="faq-icon">+</span>
           </button>
@@ -611,7 +629,7 @@
           </div>
         </div>
         <div class="faq-item">
-          <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+          <button class="faq-question" aria-expanded="false">
             <span>Le poisson est-il toujours frais ?</span>
             <span class="faq-icon">+</span>
           </button>

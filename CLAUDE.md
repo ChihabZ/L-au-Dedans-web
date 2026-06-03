@@ -52,3 +52,52 @@
 - Do not stop after one screenshot pass
 - Do not use `transition-all`
 - Do not use default Tailwind blue/indigo as primary color
+
+---
+
+## JS–HTML Contract (READ BEFORE TOUCHING index.html OR dashboard.html)
+
+The site uses ES modules (`js/main.js` and files it imports). The HTML and JS are coupled through specific IDs and class names. **Never rename or remove any of the following without also updating the corresponding JS file.**
+
+### index.html — protected anchors
+
+| Element / attribute | Used by | Purpose |
+|---|---|---|
+| `<script type="module" src="js/main.js">` at bottom | everything | Boots all JS modules — do not remove |
+| `id="eventPoster"` on the Événements `<img>` | `js/actualites.js` | Swapped with Supabase poster URL |
+| `id="nlToggle"` | `js/newsletter.js` | Toggle newsletter form open/close |
+| `id="nlFormWrap"` | `js/newsletter.js` | The expandable form container |
+| `id="nlFormEl"` | `js/newsletter.js` | Form submit handler |
+| `id="nlEmail"` | `js/newsletter.js` | Email input value |
+| `id="nlMsg"` | `js/newsletter.js` | Success/error message display |
+| `id="reserveModal"` | `js/modal.js` | Reservation modal open/close |
+| `id="hamburger"` | `js/nav.js` | Mobile menu toggle button |
+| `id="mobileMenu"` | `js/nav.js` | Full-screen mobile menu overlay |
+| `id="mobileClose"` | `js/nav.js` | Close button inside mobile menu |
+| `id="mobileReserveBtn"` | `js/nav.js` | Reserve button inside mobile menu |
+| `id="navReserveBtn"` | `js/nav.js` | Desktop reserve button visibility |
+| `id="vinsGrid"` | `js/responsive.js` | 1-col collapse on mobile |
+| `id="horairesGrid"` | `js/responsive.js` | 1-col collapse on mobile |
+| class `menu-tab` on menu buttons | `js/menu.js` | Tab switching logic |
+| class `menu-panel` on menu content divs | `js/menu.js` | Panel show/hide |
+| class `faq-question` on FAQ buttons | `js/faq.js` | Accordion toggle |
+| class `faq-answer` on FAQ answer divs | `js/faq.js` | Accordion open/close |
+| class `faq-icon` on FAQ `+` spans | `js/faq.js` | Icon toggle +/− |
+
+### admin/dashboard.html — protected anchors
+
+The dashboard has a large inline `<script type="module">` that queries DOM elements by ID. If you rename any element used in that script, its section will silently break.
+
+Key IDs: `tableContainer`, `statsBar`, `categoryFilters`, `formModal`, `itemForm`, `deleteModal`, `confirmDeleteBtn`, `deleteItemName`, `toastContainer`, `pageTitle`, `pageSubtitle`, `addBtn`, `resTableContainer`, `resDateFilters`, `resStats`, `page-menu`, `page-reservations`, `page-actualites`, `page-newsletter`, `nav-menu`, `nav-reservations`, `nav-actualites`, `nav-newsletter`, `sidebar`, `sidebarToggle`, `sidebarOverlay`, `currentPosterArea`, `posterHistoryContainer`, `uploadBtn`, `posterFileInput`, `dropZone`, `uploadPreviewWrap`, `nlSubject`, `nlBody`, `nlSubscriberList`, `nlStats`, `nlRefreshBtn`.
+
+### Safe to edit freely
+- Visual styles in `css/main.css` — colors, spacing, fonts, shadows
+- Text content (headings, paragraphs, labels) in index.html
+- Image `src` attributes (other than `id="eventPoster"` which is overridden by JS anyway)
+- Adding new HTML sections that don't overlap with the above IDs
+- The brand tokens (CSS variables in `:root`)
+
+### Before any UI edit session
+1. Read this section
+2. If you must rename a protected ID, search the corresponding JS file and update it there too
+3. Never remove the `<script type="module" src="js/main.js">` line from index.html

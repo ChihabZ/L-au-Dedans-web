@@ -24,6 +24,8 @@ import { initMenu       } from './menu.js';
 import { initModal      } from './modal.js';
 import { initFaq        } from './faq.js';
 import { initResponsive } from './responsive.js';
+import { initActualites } from './actualites.js';
+import { initNewsletter } from './newsletter.js';
 
 // Hero background scale-in (needs images loaded)
 window.addEventListener('load', () => {
@@ -38,5 +40,7 @@ window.addEventListener('load', () => {
   initModal();
   initFaq();
   initResponsive();
-  await initMenu();   // fetches matin tab + wines from Supabase
+  await initMenu();        // fetches matin tab + wines from Supabase
+  initActualites();        // fetches latest poster from Supabase (non-blocking)
+  initNewsletter();        // newsletter subscribe form in Événements section
 })();
