@@ -70,20 +70,20 @@
     <!-- ─ Active module ─ -->
     <p class="text-xs text-white/30 uppercase tracking-widest px-3 pt-2 pb-1 font-semibold" style="font-family:Montserrat,sans-serif">Gestion</p>
 
-    <button onclick="setSection('menu')"
+    <button id="nav-menu"
       class="nav-item active w-full text-left px-3 py-2.5 rounded-r text-sm font-medium flex items-center gap-3 transition-colors"
-      id="nav-menu" style="font-family:Montserrat,sans-serif">
+      style="font-family:Montserrat,sans-serif">
       <span>🍽️</span> Menu
     </button>
 
     <!-- ─ Coming soon ─ -->
     <p class="text-xs text-white/30 uppercase tracking-widest px-3 pt-4 pb-1 font-semibold" style="font-family:Montserrat,sans-serif">Bientôt</p>
 
-    <button disabled
-      class="nav-item w-full text-left px-3 py-2.5 rounded-r text-sm flex items-center gap-3 text-white/25 cursor-not-allowed"
-      style="font-family:Montserrat,sans-serif">
+    <button id="nav-reservations"
+      class="nav-item w-full text-left px-3 py-2.5 rounded-r text-sm font-medium flex items-center gap-3 transition-colors"
+      style="font-family:Montserrat,sans-serif;color:rgba(255,255,255,0.6)">
       <span>📅</span> Réservations
-      <span class="ml-auto text-[10px] bg-white/10 px-1.5 py-0.5 rounded">soon</span>
+      <span id="resBadge" class="ml-auto hidden text-[10px] bg-yellow-400 text-yellow-900 font-bold px-1.5 py-0.5 rounded-full"></span>
     </button>
 
     <button disabled
@@ -143,18 +143,27 @@
   <!-- Page content -->
   <div class="p-8 flex-1">
 
-    <!-- Stats strip -->
-    <div id="statsBar" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6"></div>
-
-    <!-- Category filters -->
-    <div class="flex flex-wrap gap-2 mb-5" id="categoryFilters">
-      <!-- rendered by JS -->
+    <!-- ═══════ SECTION: MENU ═══════ -->
+    <div id="page-menu" class="dashboard-page">
+      <div id="statsBar" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6"></div>
+      <div class="flex flex-wrap gap-2 mb-5" id="categoryFilters"></div>
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div id="tableContainer"></div>
+      </div>
     </div>
 
-    <!-- Items table card -->
-    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div id="tableContainer">
-        <!-- rendered by JS -->
+    <!-- ═══════ SECTION: RÉSERVATIONS ═══════ -->
+    <div id="page-reservations" class="dashboard-page hidden">
+
+      <!-- Date filter tabs -->
+      <div id="resDateFilters" class="flex flex-wrap gap-2 mb-6"></div>
+
+      <!-- Stats strip -->
+      <div id="resStats" class="grid grid-cols-3 gap-3 mb-6"></div>
+
+      <!-- Reservations table -->
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div id="resTableContainer"></div>
       </div>
     </div>
 
@@ -319,10 +328,11 @@ const TABLE = 'Menu_items';  // must match the exact Supabase table name
 // ─────────────────────────────────────────────────────────────
 
 const state = {
-  items:          [],           // all items fetched from DB
-  activeCategory: 'ALL',        // currently selected filter
-  editingId:      null,         // id_item being edited (null = adding new)
-  pendingDeleteId: null,        // id_item waiting for delete confirm
+  items:            [],       // menu items from DB
+  activeCategory:   'ALL',   // current menu filter
+  editingId:        null,     // id_item being edited (null = add mode)
+  pendingDeleteId:  null,     // id waiting for delete confirm
+  pendingDeleteType: 'menu',  // 'menu' | 'reservation'
 };
 
 // Category metadata: display label + Tailwind badge colors
@@ -649,7 +659,8 @@ function clearFormError() {
 
 // ── Delete confirm modal ─────────────────────────────────────
 function openDeleteModal(id, name) {
-  state.pendingDeleteId = id;
+  state.pendingDeleteId   = id;
+  state.pendingDeleteType = 'menu';   // reset to menu; reservation delete sets its own type
   document.getElementById('deleteItemName').textContent = `"${name}"`;
   document.getElementById('deleteModal').classList.remove('hidden');
 }
@@ -745,24 +756,33 @@ document.getElementById('itemForm').addEventListener('submit', async e => {
   await loadAndRender();  // refresh table from DB
 });
 
-// ── Delete confirm ───────────────────────────────────────────
+// ── Delete confirm (handles menu items AND reservations) ─────
 document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
-  const id = state.pendingDeleteId;
+  const id   = state.pendingDeleteId;
+  const type = state.pendingDeleteType;
   if (!id) return;
 
   document.getElementById('confirmDeleteBtn').textContent = 'Suppression…';
 
-  const { error } = await dbDelete(id);
-
-  if (error) {
-    showToast(`Erreur: ${error.message}`, 'error');
+  let error;
+  if (type === 'reservation') {
+    ({ error } = await dbDeleteReservation(id));
   } else {
-    showToast('Item supprimé.', 'info');
+    ({ error } = await dbDelete(id));
   }
 
+  if (error) showToast(`Erreur: ${error.message}`, 'error');
+  else       showToast('Supprimé.', 'info');
+
   closeDeleteModal();
-  await loadAndRender();
+  if (type === 'reservation') await loadAndRenderReservations();
+  else                        await loadAndRender();
 });
+
+// ── Nav section buttons (onclick not usable in module scope) ─
+// Wired here with addEventListener so setSection is accessible.
+document.getElementById('nav-menu')?.addEventListener('click', () => setSection('menu'));
+document.getElementById('nav-reservations')?.addEventListener('click', () => setSection('reservations'));
 
 // ── Auth logout placeholder ──────────────────────────────────
 // TODO: replace with supabase.auth.signOut() → redirect to /admin/login.html
@@ -772,12 +792,286 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 
 
 // ─────────────────────────────────────────────────────────────
-// SECTION 7 — INIT
-// Entry point: fetch data, render everything.
-//
-// AUTH HOOK (future):
-//   const session = await supabase.auth.getSession();
-//   if (!session.data.session) { window.location = '/admin/login.html'; return; }
+// SECTION 7 — SECTION SYSTEM
+// Switches between "menu" and "reservations" pages.
+// ─────────────────────────────────────────────────────────────
+
+function setSection(name) {
+  // Sidebar active state
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-' + name)?.classList.add('active');
+
+  // Show / hide pages
+  document.querySelectorAll('.dashboard-page').forEach(p => p.classList.add('hidden'));
+  document.getElementById('page-' + name)?.classList.remove('hidden');
+
+  // Header updates
+  const headers = {
+    menu:         { title: 'Menu Items',   sub: 'Gérez les plats et vins affichés sur le site', showAdd: true  },
+    reservations: { title: 'Réservations', sub: 'Gérez les demandes de réservation',            showAdd: false },
+  };
+  const h = headers[name] ?? { title: name, sub: '', showAdd: false };
+  document.getElementById('pageTitle').textContent    = h.title;
+  document.getElementById('pageSubtitle').textContent = h.sub;
+  document.getElementById('addBtn').style.display     = h.showAdd ? 'flex' : 'none';
+
+  if (name === 'menu')         loadAndRender();
+  if (name === 'reservations') loadAndRenderReservations();
+}
+
+// ─────────────────────────────────────────────────────────────
+// SECTION 8 — RESERVATIONS CRUD
+// Table: reservation
+// Columns: id_res, nom_res, tel_res, date_res, heure_res, statut_res, preference_res, created_at
+// ─────────────────────────────────────────────────────────────
+
+const RES_TABLE = 'reservation';
+
+const resState = { reservations: [], activeFilter: 'today' };
+
+// Date helpers
+function todayISO()    { return new Date().toISOString().split('T')[0]; }
+function tomorrowISO() { return new Date(Date.now() + 86400000).toISOString().split('T')[0]; }
+function weekEndISO()  { return new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]; }
+
+// READ — filtered by period
+async function dbFetchReservations(filter) {
+  let query = supabase
+    .from(RES_TABLE)
+    .select('*')
+    .order('date_res',  { ascending: true })
+    .order('heure_res', { ascending: true });
+
+  if (filter === 'today')    query = query.eq('date_res', todayISO());
+  if (filter === 'tomorrow') query = query.eq('date_res', tomorrowISO());
+  if (filter === 'week')     query = query.gte('date_res', todayISO()).lte('date_res', weekEndISO());
+  // 'all' → no date filter
+
+  const { data, error } = await query;
+  return { data: data ?? [], error };
+}
+
+// UPDATE status (nouveau → confirme → annule)
+async function dbUpdateResStatus(id, status) {
+  const { error } = await supabase
+    .from(RES_TABLE).update({ statut_res: status }).eq('id_res', id);
+  return { error };
+}
+
+// DELETE reservation
+async function dbDeleteReservation(id) {
+  const { error } = await supabase
+    .from(RES_TABLE).delete().eq('id_res', id);
+  return { error };
+}
+
+// ── Display helpers ───────────────────────────────────────────
+
+function formatDate(d) {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function heureLabel(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const service = t.startsWith('12') ? 'Midi' : t.startsWith('19') ? 'Soir' : null;
+  const time    = `${h}h${m}`;
+  return service ? `${service} · ${time}` : time;
+}
+
+const STATUT = {
+  nouveau:  { label: 'Nouveau',  cls: 'bg-yellow-100 text-yellow-800' },
+  confirme: { label: 'Confirmé', cls: 'bg-green-100 text-green-800'   },
+  annule:   { label: 'Annulé',   cls: 'bg-red-100 text-red-700'       },
+};
+const PREF = { interieur: '🏠 Intérieur', exterieur: '🌿 Extérieur' };
+
+// ── Renderers ─────────────────────────────────────────────────
+
+function renderReservationFilters() {
+  const FILTERS = {
+    today:    "Aujourd'hui",
+    tomorrow: 'Demain',
+    week:     '7 prochains jours',
+    all:      'Toutes',
+  };
+  document.getElementById('resDateFilters').innerHTML = Object.entries(FILTERS).map(([key, label]) => {
+    const active = resState.activeFilter === key;
+    const base   = 'text-xs font-semibold px-4 py-1.5 rounded-full border transition-colors cursor-pointer';
+    const cls    = active
+      ? 'bg-deep text-gold border-deep'
+      : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400';
+    return `<button class="${base} ${cls}" data-res-filter="${key}"
+      style="font-family:Montserrat,sans-serif">${label}</button>`;
+  }).join('');
+
+  document.querySelectorAll('[data-res-filter]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      resState.activeFilter = btn.dataset.resFilter;
+      await loadAndRenderReservations();
+    });
+  });
+}
+
+function renderReservationStats() {
+  const counts = { nouveau: 0, confirme: 0, annule: 0 };
+  resState.reservations.forEach(r => {
+    const s = (r.statut_res ?? 'nouveau').toLowerCase();
+    if (s in counts) counts[s]++;
+  });
+
+  document.getElementById('resStats').innerHTML = [
+    ['nouveau',  counts.nouveau,  'bg-yellow-50 border-yellow-200 text-yellow-800'],
+    ['confirme', counts.confirme, 'bg-green-50 border-green-200 text-green-800'  ],
+    ['annule',   counts.annule,   'bg-red-50 border-red-200 text-red-700'         ],
+  ].map(([key, count, cls]) => `
+    <div class="border rounded-lg p-4 text-center ${cls}">
+      <p class="text-3xl font-bold">${count}</p>
+      <p class="text-xs mt-1 uppercase tracking-wider" style="font-family:Montserrat,sans-serif">
+        ${STATUT[key]?.label ?? key}
+      </p>
+    </div>`).join('');
+}
+
+function renderReservationsTable() {
+  const container = document.getElementById('resTableContainer');
+  const items     = resState.reservations;
+
+  if (!items.length) {
+    container.innerHTML = `
+      <div class="py-20 text-center text-gray-400">
+        <p class="text-4xl mb-3">📅</p>
+        <p class="text-sm" style="font-family:Montserrat,sans-serif">
+          Aucune réservation pour cette période.
+        </p>
+      </div>`;
+    return;
+  }
+
+  const rows = items.map(r => {
+    const st   = STATUT[(r.statut_res ?? 'nouveau').toLowerCase()] ?? STATUT.nouveau;
+    const pref = PREF[r.preference_res] ?? r.preference_res ?? '–';
+
+    return `
+      <tr class="item-row border-t border-gray-100">
+        <td class="px-4 py-3">
+          <p class="text-sm font-bold text-gray-800">${formatDate(r.date_res)}</p>
+          <p class="text-xs font-semibold mt-0.5" style="font-family:Montserrat,sans-serif;color:#6b7280">
+            ${heureLabel(r.heure_res)}
+          </p>
+        </td>
+        <td class="px-4 py-3 text-sm font-semibold text-gray-800">${r.nom_res}</td>
+        <td class="px-4 py-3">
+          <!-- 📞 Tap to call directly on mobile -->
+          <a href="tel:${r.tel_res}"
+            class="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">
+            📞 ${r.tel_res}
+          </a>
+        </td>
+        <td class="px-4 py-3 text-sm text-gray-600">${pref}</td>
+        <td class="px-4 py-3">
+          <span class="inline-block text-xs font-bold px-2.5 py-1 rounded-full ${st.cls}"
+            style="font-family:Montserrat,sans-serif">${st.label}</span>
+        </td>
+        <td class="px-4 py-3">
+          <div class="flex items-center gap-1.5 justify-end flex-wrap">
+            ${r.statut_res !== 'confirme' ? `
+              <button class="btn-res-confirm text-xs bg-green-50 hover:bg-green-100 text-green-700
+                border border-green-200 px-3 py-1.5 rounded font-bold transition whitespace-nowrap"
+                data-id="${r.id_res}" style="font-family:Montserrat,sans-serif">✓ Confirmer</button>` : ''}
+            ${r.statut_res !== 'annule' ? `
+              <button class="btn-res-cancel text-xs bg-red-50 hover:bg-red-100 text-red-600
+                border border-red-200 px-3 py-1.5 rounded font-bold transition whitespace-nowrap"
+                data-id="${r.id_res}" style="font-family:Montserrat,sans-serif">✗ Annuler</button>` : ''}
+            <button class="btn-res-delete text-gray-300 hover:text-red-400 px-2 py-1 rounded transition"
+              data-id="${r.id_res}" data-name="${r.nom_res}">🗑️</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <table class="w-full text-left">
+      <thead class="bg-gray-50 text-xs text-gray-400 uppercase tracking-wider border-b border-gray-200"
+        style="font-family:Montserrat,sans-serif">
+        <tr>
+          <th class="px-4 py-3">Date &amp; Service</th>
+          <th class="px-4 py-3">Nom</th>
+          <th class="px-4 py-3">Téléphone</th>
+          <th class="px-4 py-3">Préférence</th>
+          <th class="px-4 py-3">Statut</th>
+          <th class="px-4 py-3 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="px-4 py-3 border-t border-gray-100 text-xs text-gray-400"
+      style="font-family:Montserrat,sans-serif">
+      ${items.length} réservation${items.length > 1 ? 's' : ''}
+    </div>`;
+
+  // Wire Confirmer buttons
+  container.querySelectorAll('.btn-res-confirm').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const { error } = await dbUpdateResStatus(btn.dataset.id, 'confirme');
+      if (error) showToast('Erreur: ' + error.message, 'error');
+      else { showToast('Réservation confirmée ✓', 'success'); await loadAndRenderReservations(); }
+    });
+  });
+
+  // Wire Annuler buttons
+  container.querySelectorAll('.btn-res-cancel').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const { error } = await dbUpdateResStatus(btn.dataset.id, 'annule');
+      if (error) showToast('Erreur: ' + error.message, 'error');
+      else { showToast('Réservation annulée.', 'info'); await loadAndRenderReservations(); }
+    });
+  });
+
+  // Wire delete buttons (reuse shared delete modal)
+  container.querySelectorAll('.btn-res-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.pendingDeleteId   = btn.dataset.id;
+      state.pendingDeleteType = 'reservation';
+      document.getElementById('deleteItemName').textContent = `"${btn.dataset.name}"`;
+      document.getElementById('deleteModal').classList.remove('hidden');
+    });
+  });
+}
+
+async function loadAndRenderReservations() {
+  document.getElementById('resTableContainer').innerHTML = `
+    <div class="py-12 text-center">
+      <div class="skeleton h-4 w-32 mx-auto mb-3 rounded"></div>
+      <div class="skeleton h-3 w-48 mx-auto rounded"></div>
+    </div>`;
+
+  const { data, error } = await dbFetchReservations(resState.activeFilter);
+
+  if (error) {
+    document.getElementById('resTableContainer').innerHTML = `
+      <div class="py-12 text-center text-red-400 text-sm">${error.message}</div>`;
+    return;
+  }
+
+  resState.reservations = data;
+  renderReservationStats();
+  renderReservationFilters();
+  renderReservationsTable();
+
+  // Sidebar badge: count new reservations for today
+  const newToday = data.filter(r => r.statut_res === 'nouveau' && r.date_res === todayISO()).length;
+  const badge = document.getElementById('resBadge');
+  if (badge) {
+    badge.textContent = newToday;
+    badge.classList.toggle('hidden', newToday === 0);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// SECTION 9 — MENU INIT
 // ─────────────────────────────────────────────────────────────
 
 async function loadAndRender() {
@@ -793,9 +1087,6 @@ async function loadAndRender() {
           Impossible de charger les données.
         </p>
         <p class="text-xs text-gray-400 mt-2">${error.message}</p>
-        <p class="text-xs text-gray-400 mt-1">
-          Vérifiez les politiques RLS dans Supabase (INSERT / UPDATE / DELETE pour anon).
-        </p>
       </div>`;
     return;
   }
@@ -806,8 +1097,14 @@ async function loadAndRender() {
   renderTable();
 }
 
-// Boot
-loadAndRender();
+// ─────────────────────────────────────────────────────────────
+// BOOT
+// AUTH HOOK (future):
+//   const { data: { session } } = await supabase.auth.getSession();
+//   if (!session) { window.location = '/admin/login.html'; return; }
+// ─────────────────────────────────────────────────────────────
+
+setSection('menu'); // default section on load
 
 </script>
 </body>

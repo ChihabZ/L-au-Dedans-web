@@ -11,9 +11,29 @@
   <link rel="stylesheet" href="css/main.css">
 
   <!-- LEGACY INLINE STYLES REMOVED — see css/main.css -->
-  <style>/* NOTE: hero bg image path needs to stay relative to index.html, not css/ */
+  <style>/* NOTE: hero bg image paths must stay relative to index.html, not css/ */
   #heroBg { background-image: url('building%20assets/auDedans-pic1.png'); }
   #vins   { background-image: url('building%20assets/auDedans-pic2.jpg'); }
+
+  /* Reservation form — selectable cards (heure + preference) */
+  .res-card {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 6px; padding: 1.1rem 0.8rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer; color: rgba(255,255,255,0.65);
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+    width: 100%; text-align: center;
+  }
+  .res-card:hover  { border-color: rgba(212,175,55,0.45); background: rgba(212,175,55,0.06); }
+  .res-card.active { border-color: var(--gold); background: rgba(212,175,55,0.12); color: var(--gold); }
+  .res-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .res-card .card-sub { font-size: 0.7rem; color: rgba(255,255,255,0.3); transition: color 0.2s ease; }
+  .res-card.active .card-sub { color: rgba(212,175,55,0.6); }
+  .res-card .card-emoji { font-size: 1.5rem; line-height: 1; }
+
+  /* Modal success state */
+  #resSuccess { display: none; text-align: center; padding: 2rem 0; }
   </style>
   <!-- ↑ Minimal overrides only. All brand styles live in css/main.css -->
 
@@ -689,61 +709,87 @@
       Complétez le formulaire ci-dessous. Nous vous confirmerons votre réservation par téléphone sous 24h.
     </p>
 
+    <!-- Success state (shown after submission) -->
+    <div id="resSuccess">
+      <div style="font-size:3rem;margin-bottom:1rem">⚓</div>
+      <h3 class="f-display" style="font-size:1.8rem;font-weight:300;color:var(--gold);margin-bottom:0.8rem">
+        Demande envoyée !
+      </h3>
+      <p style="font-size:0.875rem;color:rgba(255,255,255,0.5);line-height:1.75;margin-bottom:1.5rem">
+        Nous vous confirmerons votre réservation<br>par téléphone sous peu.
+      </p>
+      <p style="font-size:0.78rem;color:rgba(255,255,255,0.3);font-family:'Montserrat',sans-serif">
+        <a href="tel:+33563788426" style="color:var(--gold);text-decoration:none">05 63 78 84 26</a>
+      </p>
+    </div>
+
+    <!-- Reservation form -->
     <form id="reserveForm" novalidate>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-        <div>
-          <label class="form-label" for="resNom">Nom *</label>
-          <input type="text" id="resNom" class="form-input" placeholder="Votre nom" required>
-        </div>
-        <div>
-          <label class="form-label" for="resPrenom">Prénom *</label>
-          <input type="text" id="resPrenom" class="form-input" placeholder="Votre prénom" required>
-        </div>
+
+      <!-- Date -->
+      <div style="margin-bottom:1.2rem">
+        <label class="form-label" for="res_date">Date *</label>
+        <input type="date" id="res_date" class="form-input" required>
+        <p id="dateWarning" style="display:none;margin-top:6px;font-size:0.75rem;color:rgba(196,30,58,0.9);font-family:'Inter',sans-serif">
+          ⚠ Fermé le lundi et mardi — choisissez du mercredi au dimanche.
+        </p>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-        <div>
-          <label class="form-label" for="resTel">Téléphone *</label>
-          <input type="tel" id="resTel" class="form-input" placeholder="06 XX XX XX XX" required>
-        </div>
-        <div>
-          <label class="form-label" for="resEmail">Email</label>
-          <input type="email" id="resEmail" class="form-input" placeholder="votre@email.com">
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-        <div>
-          <label class="form-label" for="resDate">Date *</label>
-          <input type="date" id="resDate" class="form-input" required>
-        </div>
-        <div>
-          <label class="form-label" for="resService">Service *</label>
-          <select id="resService" class="form-input" required>
-            <option value="">Choisir…</option>
-            <option>Midi (12h00 – 13h30)</option>
-            <option>Soir (19h30 – 21h00)</option>
-          </select>
-        </div>
-      </div>
-      <div style="margin-bottom:1rem">
-        <label class="form-label" for="resPersonnes">Nombre de personnes *</label>
-        <select id="resPersonnes" class="form-input" required>
-          <option value="">Choisir…</option>
-          <option>1 personne</option>
-          <option>2 personnes</option>
-          <option>3 personnes</option>
-          <option>4 personnes</option>
-          <option>5 personnes</option>
-          <option>6 personnes</option>
-          <option>7 personnes ou plus</option>
+
+      <!-- Service -->
+      <div style="margin-bottom:1.2rem">
+        <label class="form-label" for="res_service">Service *</label>
+        <select id="res_service" class="form-input">
+          <option value="">Choisir un service…</option>
+          <option value="midi">🌞 Midi — 12h00 à 13h30</option>
+          <option value="soir">🌙 Soir — 19h30 à 21h00</option>
         </select>
       </div>
-      <div style="margin-bottom:1.8rem">
-        <label class="form-label" for="resMessage">Message (allergies, occasion spéciale…)</label>
-        <textarea id="resMessage" class="form-input" rows="3" placeholder="Informations complémentaires…" style="resize:vertical"></textarea>
+
+      <!-- Heure précise — apparaît après choix du service -->
+      <div id="heureWrapper" style="margin-bottom:1.2rem;display:none">
+        <label class="form-label" for="res_heure">Heure souhaitée *</label>
+        <input type="time" id="res_heure" class="form-input" disabled>
+        <p id="heureHint" style="font-size:0.72rem;color:rgba(255,255,255,0.3);margin-top:6px;font-family:'Inter',sans-serif"></p>
       </div>
-      <button type="submit" class="btn-reserve" style="width:100%">Envoyer ma Demande</button>
-      <p style="text-align:center;margin-top:1rem;font-size:0.72rem;color:rgba(255,255,255,0.28)">
-        Ou appelez-nous directement : <a href="tel:+33563788426" style="color:var(--gold);text-decoration:none">05 63 78 84 26</a>
+
+      <!-- Préférence -->
+      <div style="margin-bottom:1.2rem">
+        <label class="form-label">Préférence *</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.4rem">
+          <button type="button" class="res-card" data-group="preference" data-value="interieur">
+            <span class="card-emoji">🏠</span>
+            <span class="f-display" style="font-size:1.1rem;font-weight:400">Intérieur</span>
+            <span class="card-sub">Salle principale</span>
+          </button>
+          <button type="button" class="res-card" data-group="preference" data-value="exterieur">
+            <span class="card-emoji">🌿</span>
+            <span class="f-display" style="font-size:1.1rem;font-weight:400">Extérieur</span>
+            <span class="card-sub">Tables en extérieur</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Nom + Tel -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.2rem">
+        <div>
+          <label class="form-label" for="res_nom">Nom *</label>
+          <input type="text" id="res_nom" class="form-input" placeholder="Votre nom" required>
+        </div>
+        <div>
+          <label class="form-label" for="res_tel">Téléphone *</label>
+          <input type="tel" id="res_tel" class="form-input" placeholder="06 XX XX XX XX" required>
+        </div>
+      </div>
+
+      <!-- Error message -->
+      <div id="resFormError" style="display:none;margin-bottom:1rem;padding:10px 14px;border:1px solid rgba(196,30,58,0.3);background:rgba(196,30,58,0.08);font-size:0.78rem;color:rgba(196,30,58,0.9);font-family:'Inter',sans-serif"></div>
+
+      <button type="submit" id="resSubmitBtn" class="btn-reserve" style="width:100%">
+        Réserver ma Table
+      </button>
+      <p style="text-align:center;margin-top:0.9rem;font-size:0.7rem;color:rgba(255,255,255,0.22);font-family:'Montserrat',sans-serif;letter-spacing:0.05em">
+        Confirmation par téléphone ·
+        <a href="tel:+33563788426" style="color:var(--gold);text-decoration:none">05 63 78 84 26</a>
       </p>
     </form>
   </div>
